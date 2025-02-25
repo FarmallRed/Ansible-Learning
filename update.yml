@@ -1,0 +1,41 @@
+---
+- name: Update Linux Systems
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update and upgrade Debian-based systems
+      apt:
+        update_cache: yes
+        upgrade: dist
+      when: ansible_os_family == "Debian"
+
+    - name: Update and upgrade RedHat-based systems
+      dnf:
+        name: "*"
+        state: latest
+      when: ansible_os_family == "RedHat"
+
+    - name: Clean up unused packages (Debian-based systems)
+      apt:
+        autoremove: yes
+        autoclean: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Clean up unused packages (RedHat-based systems)
+      dnf:
+        autoremove: yes
+      when: ansible_os_family == "RedHat"
+
+    - name: Reboot if necessary (Debian-based systems)
+      command: /sbin/shutdown -r now
+      async: 0
+      poll: 0
+      ignore_errors: yes
+      when: ansible_os_family == "Debian" and ansible_pkg_mgr == "apt"
+
+    - name: Reboot if necessary (RedHat-based systems)
+      command: /sbin/shutdown -r now
+      async: 0
+      poll: 0
+      ignore_errors: yes
+      when: ansible_os_family == "RedHat" and ansible_pkg_mgr in ["dnf", "yum"]
